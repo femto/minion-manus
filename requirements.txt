@@ -1,0 +1,18 @@
+# Core dependencies from Minion
+loguru>=0.7.0
+python-dotenv>=1.0.0
+litellm>=1.0.0
+tenacity>=9.0.0
+jinja2>=3.1.2
+aiofiles>=24.1.0
+
+# Browser use dependencies from OpenManus
+browser-use>=0.1.40
+pydantic>=2.10.4
+pillow>=10.4.0
+playwright>=1.49.1
+
+# Development dependencies
+pytest>=7.0.0
+pytest-asyncio>=0.21.0
+black>=23.0.0 
