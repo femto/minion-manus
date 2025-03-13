@@ -1,0 +1,78 @@
+# Full Example: https://github.com/geekan/MetaGPT/blob/main/config/config2.example.yaml
+# Reflected Code: https://github.com/geekan/MetaGPT/blob/main/metagpt/config2.py
+# Config Docs: https://docs.deepwisdom.ai/main/en/guide/get_started/configuration.html
+
+environment:
+  ENV1: val1
+  ENV2: val2
+  ENV3: val3
+
+env_file:
+  - .env
+  - .env.local
+
+llm:
+  api_key: "${LLM_API_KEY}"
+  model: "deepseek-chat"
+  base_url: "${LLM_BASE_URL}"
+
+models:
+  "default":
+    api_type: "openai"
+    base_url: "${DEFAULT_BASE_URL}"
+    api_key: "${DEFAULT_API_KEY}"
+    model: "${DEFAULT_MODEL}"
+    temperature: 0
+  "gpt-4-0125":
+    api_type: "openai"
+    base_url: "https://oneapi.deepwisdom.ai/v1"
+    api_key: "sk-example-key"
+    temperature: 0
+  "claude-3-5-sonnet-20240620":
+    api_type: "openai"
+    base_url: "${CLAUDE_BASE_URL}"
+    api_key: "${CLAUDE_API_KEY}"
+    temperature: 0.7
+  "deepseek-r1":
+   api_type: "azure_inference"  # or azure / ollama / groq etc.
+   api_key: "YOUR_KEY"
+   base_url: "YOUR_URL"
+   model: "DeepSeek-R1"
+   temperature: 0.1
+ell:
+  store: 'logs'
+  autocommit:true
+  verbose:true
+mem0:
+  version: "v1.1"
+  llm:
+    provider: "openai"
+    config:
+      model: "gpt-4o-mini"
+      temperature: 0.2
+      max_tokens: 1500
+      top_p: 1.0
+
+  embedder:
+    provider: "ollama"
+    config:
+      model: "nomic-embed-text:latest"
+      ollama_base_url: "http://localhost:11434"
+
+  vector_store:
+    provider: "qdrant"
+    config:
+      collection_name: "mem0"
+      host: "localhost"
+      port: 6333
+      on_disk: true
+      embedding_model_dims: 768
+
+#  graph_store:
+#    provider: "neo4j"
+#    config:
+#      url: "${NEO4J_URL}"
+#      username: "${NEO4J_USERNAME}"
+#      password: "${NEO4J_PASSWORD}"
+
+

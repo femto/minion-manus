@@ -88,4 +88,8 @@ test-results/
 
 # VS Code
 .vscode/
-*.code-workspace 
+*.code-workspace
+
+config.yaml
+.idea
+*.bak
