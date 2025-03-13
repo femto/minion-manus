@@ -8,6 +8,7 @@ import asyncio
 import json
 import sys
 import os
+import ast
 from typing import Dict, List, Any
 
 # Add the parent directory to the path so we can import the package
@@ -27,46 +28,62 @@ async def scrape_hacker_news(browser_tool: BrowserTool) -> List[Dict[str, Any]]:
         A list of stories, each with a title, URL, and score.
     """
     # Navigate to Hacker News
-    await browser_tool.execute("navigate", url="https://news.ycombinator.com/")
+    result = await browser_tool.execute("navigate", url="https://news.ycombinator.com/")
+    print(f"Navigation result: {result.message}")
+    
+    # Get the HTML content to debug
+    html_result = await browser_tool.execute("get_html")
+    if html_result.success:
+        print(f"HTML content length: {len(html_result.data['html'])}")
+    else:
+        print(f"Failed to get HTML: {html_result.message}")
     
     # Get all the story elements using JavaScript
     script = """
-    const stories = [];
-    const rows = document.querySelectorAll('tr.athing');
-    
-    for (let i = 0; i < Math.min(rows.length, 10); i++) {
-        const row = rows[i];
-        const id = row.getAttribute('id');
-        const titleElement = row.querySelector('td.title > span.titleline > a');
-        const title = titleElement ? titleElement.textContent : '';
-        const url = titleElement ? titleElement.getAttribute('href') : '';
+    () => {
+        const stories = [];
+        const rows = document.querySelectorAll('tr.athing');
         
-        // Get the score from the next row
-        const scoreRow = row.nextElementSibling;
-        const scoreElement = scoreRow ? scoreRow.querySelector('span.score') : null;
-        const score = scoreElement ? scoreElement.textContent : '0 points';
+        console.log('Found ' + rows.length + ' rows');
         
-        stories.push({
-            id,
-            title,
-            url,
-            score
-        });
+        for (let i = 0; i < Math.min(rows.length, 10); i++) {
+            const row = rows[i];
+            const id = row.getAttribute('id');
+            const titleElement = row.querySelector('td.title > span.titleline > a');
+            const title = titleElement ? titleElement.textContent : '';
+            const url = titleElement ? titleElement.getAttribute('href') : '';
+            
+            // Get the score from the next row
+            const scoreRow = row.nextElementSibling;
+            const scoreElement = scoreRow ? scoreRow.querySelector('span.score') : null;
+            const score = scoreElement ? scoreElement.textContent : '0 points';
+            
+            stories.push({
+                id,
+                title,
+                url,
+                score
+            });
+        }
+        
+        return stories;
     }
-    
-    return stories;
     """
     
     result = await browser_tool.execute("execute_js", script=script)
     
     if not result.success:
+        print(f"JavaScript execution failed: {result.message}")
         return []
     
     # Parse the result
     try:
-        stories = json.loads(result.data["result"])
+        print(f"JavaScript result: {result.data['result']}")
+        # Use ast.literal_eval instead of json.loads to handle the JavaScript object format
+        stories = ast.literal_eval(result.data["result"])
         return stories
-    except (json.JSONDecodeError, KeyError):
+    except (SyntaxError, ValueError) as e:
+        print(f"Error parsing result: {e}")
         return []
 
 

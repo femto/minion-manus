@@ -70,26 +70,27 @@ class Agent:
             # Extract search query from task (simplified)
             search_query = task.split("'")[1] if "'" in task else task
             
-            # Navigate to a search engine
-            await browser_tool.execute("navigate", url="https://www.google.com")
-            
-            # Input search query
-            await browser_tool.execute("input_text", index=0, text=search_query)
-            
-            # Press Enter (using JavaScript)
-            await browser_tool.execute(
-                "execute_js", 
-                script="document.querySelector('input[name=\"q\"]').form.submit()"
-            )
-            
-            # Get the search results
-            await asyncio.sleep(2)  # Wait for results to load
-            text_result = await browser_tool.execute("get_text")
-            
-            result["data"] = {
-                "search_query": search_query,
-                "search_results": text_result.data["text"] if text_result.success else "Failed to get results"
-            }
+            try:
+                # Navigate directly to Google search results
+                search_url = f"https://www.google.com/search?q={search_query.replace(' ', '+')}"
+                await browser_tool.execute("navigate", url=search_url)
+                
+                # Wait for results to load
+                await asyncio.sleep(2)
+                
+                # Get the search results
+                text_result = await browser_tool.execute("get_text")
+                
+                result["data"] = {
+                    "search_query": search_query,
+                    "search_results": text_result.data["text"] if text_result.success else "Failed to get results"
+                }
+            except Exception as e:
+                logger.exception(f"Error executing search: {e}")
+                result["data"] = {
+                    "search_query": search_query,
+                    "search_results": f"Error: {str(e)}"
+                }
         
         return result
     
