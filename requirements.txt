@@ -15,4 +15,8 @@ playwright>=1.49.1
 # Development dependencies
 pytest>=7.0.0
 pytest-asyncio>=0.21.0
-black>=23.0.0 
+black>=23.0.0
+
+smolagents
+browser-use
+helium
