@@ -11,14 +11,58 @@ Minion-Manus is a framework that combines the Minion agent framework with browse
 
 ## Installation
 
+Minion-Manus depends on the Minion framework. Follow these steps to set up both projects:
+
+### 1. Install Minion Framework
+
 ```bash
-# Clone the repository
+# Clone the Minion repository
+git clone https://github.com/femto/minion.git
+cd minion
+
+# Install Minion in development mode
+pip install -e .
+
+# Note the installation directory path, you'll need it later
+MINION_PATH=$(pwd)
+
+# Configure Minion
+cp config/config.yaml.example config/config.yaml
+cp config/.env.example config/.env
+
+# Edit the configuration files with your API keys and settings
+# Edit config/config.yaml for model configurations
+# Edit config/.env for API keys
+
+cd ..
+```
+
+### 2. Install Minion-Manus
+
+```bash
+# Clone the Minion-Manus repository
 git clone https://github.com/femto/minion-manus.git
 cd minion-manus
 
-# Install the package
+# Install Minion-Manus in development mode
 pip install -e .
 ```
+
+### 3. Configure Environment
+
+Set the `MINION_ROOT` environment variable to point to your Minion installation:
+
+```bash
+# For bash/zsh (add to your .bashrc or .zshrc)
+export MINION_ROOT=/path/to/minion
+
+# For Windows (set as system environment variable)
+# MINION_ROOT=C:\path\to\minion
+```
+
+Replace `/path/to/minion` with the actual path to your Minion installation (the `MINION_PATH` from step 1).
+
+The Minion-Manus project will use the configuration files from the Minion installation, so make sure your Minion configuration is properly set up with the necessary API keys and model settings.
 
 ## Quick Start
 
@@ -53,6 +97,7 @@ Minion-Manus provides a seamless integration with the SmolaAgents library throug
 The adapter supports both synchronous and asynchronous operations:
 
 ```python
+from minion import config
 from minion.providers import create_llm_provider
 from minion_manus.examples.smolagents_adapter import MinionProviderAdapter
 from smolagents import CodeAgent
@@ -88,6 +133,7 @@ Check out the `examples` directory for more detailed examples of how to use Mini
 
 - Python 3.8+
 - Dependencies listed in `requirements.txt`
+- Minion framework (installed as per instructions above)
 
 ## License
 
@@ -95,6 +141,6 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## Acknowledgements
 
-- [Minion](https://github.com/yourusername/minion1) - The core agent framework
-- [OpenManus](https://github.com/yourusername/OpenManus) - For browser use capabilities
+- [Minion](https://github.com/femto/minion) - The core agent framework
+- [OpenManus](https://github.com/femto/OpenManus) - For browser use capabilities
 - [SmolaAgents](https://github.com/huggingface/smolagents) - For agent capabilities 
