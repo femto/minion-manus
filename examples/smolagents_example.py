@@ -41,10 +41,10 @@ from smolagents import CodeAgent, ToolCallingAgent
 from smolagents.monitoring import LogLevel
 from smolagents.memory import AgentMemory
 from smolagents.tools import Tool
-from smolagents.default_tools import PythonInterpreterTool, DuckDuckGoSearchTool, VisitWebpageTool
+from smolagents.default_tools import PythonInterpreterTool, DuckDuckGoSearchTool, VisitWebpageTool, FinalAnswerTool
 
 # Import our adapter
-from smolagents_adapter import MinionProviderAdapter
+from minion_manus.examples.smolagents_adapter import MinionProviderAdapter
 
 
 # Create a custom calculator tool
@@ -374,6 +374,255 @@ async def run_brain_integration():
     console.print(f"[green]Result:[/green]\n{obs}")
 
 
+# Define a mapping of base tools similar to TOOL_MAPPING in smolagents
+TOOL_MAPPING = {
+    "calculator": CalculatorTool,
+    "database_query": DatabaseQueryTool,
+    "python_interpreter": PythonInterpreterTool,
+    "search": DuckDuckGoSearchTool,
+    "visit_webpage": VisitWebpageTool,
+}
+
+# Function to demonstrate custom tool initialization logic
+async def run_custom_tool_initialization_example():
+    console = Console()
+    console.print(Panel("[bold blue]Demonstrating Custom Tool Initialization Logic[/bold blue]"))
+    
+    # Explanation of the tool initialization logic
+    console.print("""
+[bold yellow]Explanation of the Tool Initialization Logic in smolagents:[/bold yellow]
+
+The smolagents library uses the following logic to initialize tools for agents:
+
+1. First, it creates a dictionary of tools from the user-provided tools:
+   [cyan]self.tools = {tool.name: tool for tool in tools}[/cyan]
+
+2. If add_base_tools=True (which is the default), it adds base tools from TOOL_MAPPING:
+   [cyan]if add_base_tools:
+       for tool_name, tool_class in TOOL_MAPPING.items():
+           if tool_name != "python_interpreter" or self.__class__.__name__ == "ToolCallingAgent":
+               self.tools[tool_name] = tool_class()[/cyan]
+
+3. The conditional [cyan]if tool_name != "python_interpreter" or self.__class__.__name__ == "ToolCallingAgent"[/cyan] means:
+   - The python_interpreter tool is only added if the agent is a ToolCallingAgent
+   - All other base tools are added regardless of agent type
+
+4. Finally, it always adds a final_answer tool:
+   [cyan]self.tools["final_answer"] = FinalAnswerTool()[/cyan]
+
+This ensures that every agent has a way to provide a final answer, and optionally includes 
+a set of base tools, with special handling for the Python interpreter tool.
+""")
+    
+    # Setup model
+    model_name = "gpt-4o"
+    llm_config = config.models.get(model_name)
+    llm_provider = create_llm_provider(llm_config)
+    
+    # Create the adapter
+    llm = MinionProviderAdapter(llm_provider)
+    
+    # Define custom tools
+    custom_tools = [
+        CalculatorTool(),
+    ]
+    
+    # Example 1: Initialize tools with add_base_tools=True for CodeAgent
+    console.print("\n[bold cyan]Example 1: CodeAgent with add_base_tools=True[/bold cyan]")
+    
+    # Initialize tools dictionary from custom tools
+    code_agent_tools = {tool.name: tool for tool in custom_tools}
+    
+    # Add base tools with the same logic as smolagents
+    for tool_name, tool_class in TOOL_MAPPING.items():
+        # Only add python_interpreter if this is a ToolCallingAgent
+        if tool_name != "python_interpreter" or "CodeAgent" == "ToolCallingAgent":
+            code_agent_tools[tool_name] = tool_class()
+    
+    # Always add final_answer tool
+    code_agent_tools["final_answer"] = FinalAnswerTool()
+    
+    # Print the tools that would be available
+    console.print("[yellow]Tools available to CodeAgent:[/yellow]")
+    for tool_name in code_agent_tools.keys():
+        console.print(f"  - {tool_name}")
+    
+    # Example 2: Initialize tools with add_base_tools=True for ToolCallingAgent
+    console.print("\n[bold cyan]Example 2: ToolCallingAgent with add_base_tools=True[/bold cyan]")
+    
+    # Initialize tools dictionary from custom tools
+    tool_agent_tools = {tool.name: tool for tool in custom_tools}
+    
+    # Add base tools with the same logic as smolagents
+    for tool_name, tool_class in TOOL_MAPPING.items():
+        # Only add python_interpreter if this is a ToolCallingAgent
+        if tool_name != "python_interpreter" or "ToolCallingAgent" == "ToolCallingAgent":
+            tool_agent_tools[tool_name] = tool_class()
+    
+    # Always add final_answer tool
+    tool_agent_tools["final_answer"] = FinalAnswerTool()
+    
+    # Print the tools that would be available
+    console.print("[yellow]Tools available to ToolCallingAgent:[/yellow]")
+    for tool_name in tool_agent_tools.keys():
+        console.print(f"  - {tool_name}")
+    
+    # Example 3: Create a custom agent class with the tool initialization logic
+    console.print("\n[bold cyan]Example 3: Custom Agent Class with Tool Initialization Logic[/bold cyan]")
+    
+    class CustomAgent:
+        def __init__(self, tools=None, add_base_tools=True):
+            # Initialize tools dictionary
+            self.tools = {tool.name: tool for tool in (tools or [])}
+            
+            # Add base tools if requested
+            if add_base_tools:
+                for tool_name, tool_class in TOOL_MAPPING.items():
+                    # Only add python_interpreter if this is a ToolCallingAgent
+                    if tool_name != "python_interpreter" or self.__class__.__name__ == "ToolCallingAgent":
+                        self.tools[tool_name] = tool_class()
+            
+            # Always add final_answer tool
+            self.tools["final_answer"] = FinalAnswerTool()
+    
+    # Create instances of CustomAgent with different class names
+    class ToolCallingAgent(CustomAgent):
+        pass
+    
+    class CodeAgent(CustomAgent):
+        pass
+    
+    # Create instances
+    custom_tool_agent = ToolCallingAgent(tools=custom_tools)
+    custom_code_agent = CodeAgent(tools=custom_tools)
+    
+    # Print the tools available to each agent
+    console.print("[yellow]Tools available to custom ToolCallingAgent:[/yellow]")
+    for tool_name in custom_tool_agent.tools.keys():
+        console.print(f"  - {tool_name}")
+    
+    console.print("\n[yellow]Tools available to custom CodeAgent:[/yellow]")
+    for tool_name in custom_code_agent.tools.keys():
+        console.print(f"  - {tool_name}")
+    
+    # Example 4: Create agents with add_base_tools=False
+    console.print("\n[bold cyan]Example 4: Agents with add_base_tools=False[/bold cyan]")
+    
+    no_base_tool_agent = ToolCallingAgent(tools=custom_tools, add_base_tools=False)
+    no_base_code_agent = CodeAgent(tools=custom_tools, add_base_tools=False)
+    
+    console.print("[yellow]Tools available to ToolCallingAgent with add_base_tools=False:[/yellow]")
+    for tool_name in no_base_tool_agent.tools.keys():
+        console.print(f"  - {tool_name}")
+    
+    console.print("\n[yellow]Tools available to CodeAgent with add_base_tools=False:[/yellow]")
+    for tool_name in no_base_code_agent.tools.keys():
+        console.print(f"  - {tool_name}")
+
+
+# Function to demonstrate creating a custom agent with smolagents tool initialization logic
+async def create_custom_agent_with_smolagents_logic():
+    console = Console()
+    console.print(Panel("[bold blue]Creating Custom Agent with SmolaAgents Tool Logic[/bold blue]"))
+    
+    # Setup model
+    model_name = "gpt-4o"
+    llm_config = config.models.get(model_name)
+    llm_provider = create_llm_provider(llm_config)
+    
+    # Create the adapter
+    llm = MinionProviderAdapter(llm_provider)
+    
+    # Create a base Agent class with smolagents-like tool initialization
+    class BaseAgent:
+        def __init__(self, tools=None, add_base_tools=True, model=None, max_steps=5, verbosity_level=LogLevel.INFO):
+            # Store the model and other parameters
+            self.model = model
+            self.max_steps = max_steps
+            self.verbosity_level = verbosity_level
+            self.memory = AgentMemory()
+            
+            # Initialize tools dictionary from user-provided tools
+            self.tools = {tool.name: tool for tool in (tools or [])}
+            
+            # Add base tools if requested (same logic as smolagents)
+            if add_base_tools:
+                for tool_name, tool_class in TOOL_MAPPING.items():
+                    # Only add python_interpreter if this is a ToolCallingAgent
+                    if tool_name != "python_interpreter" or self.__class__.__name__ == "ToolCallingAgent":
+                        self.tools[tool_name] = tool_class()
+            
+            # Always add final_answer tool
+            self.tools["final_answer"] = FinalAnswerTool()
+        
+        def run(self, query):
+            # Simple implementation to demonstrate tool access
+            available_tools = list(self.tools.keys())
+            return f"Agent would process query: '{query}' using available tools: {available_tools}"
+    
+    # Create specialized agent classes
+    class CustomCodeAgent(BaseAgent):
+        def __init__(self, tools=None, add_base_tools=True, model=None, max_steps=5, verbosity_level=LogLevel.INFO, 
+                     additional_authorized_imports=None):
+            super().__init__(tools, add_base_tools, model, max_steps, verbosity_level)
+            self.additional_authorized_imports = additional_authorized_imports or []
+    
+    class CustomToolCallingAgent(BaseAgent):
+        pass  # Inherits everything from BaseAgent
+    
+    # Create instances with different configurations
+    console.print("\n[bold cyan]Creating agents with different configurations:[/bold cyan]")
+    
+    # Define some custom tools
+    custom_tools = [CalculatorTool(), DatabaseQueryTool()]
+    
+    # Create a CodeAgent with default settings (add_base_tools=True)
+    code_agent = CustomCodeAgent(
+        tools=custom_tools,
+        model=llm,
+        additional_authorized_imports=["math", "numpy"]
+    )
+    
+    # Create a ToolCallingAgent with default settings (add_base_tools=True)
+    tool_agent = CustomToolCallingAgent(
+        tools=custom_tools,
+        model=llm
+    )
+    
+    # Create a CodeAgent with add_base_tools=False
+    code_agent_no_base = CustomCodeAgent(
+        tools=custom_tools,
+        model=llm,
+        add_base_tools=False
+    )
+    
+    # Print the available tools for each agent
+    console.print("\n[yellow]Tools available to CustomCodeAgent (with add_base_tools=True):[/yellow]")
+    for tool_name in code_agent.tools.keys():
+        console.print(f"  - {tool_name}")
+    
+    console.print("\n[yellow]Tools available to CustomToolCallingAgent (with add_base_tools=True):[/yellow]")
+    for tool_name in tool_agent.tools.keys():
+        console.print(f"  - {tool_name}")
+    
+    console.print("\n[yellow]Tools available to CustomCodeAgent (with add_base_tools=False):[/yellow]")
+    for tool_name in code_agent_no_base.tools.keys():
+        console.print(f"  - {tool_name}")
+    
+    # Demonstrate running the agents
+    console.print("\n[bold cyan]Running the custom agents:[/bold cyan]")
+    
+    query = "Calculate 2+2 and then query the database for users in New York"
+    
+    code_result = code_agent.run(query)
+    tool_result = tool_agent.run(query)
+    
+    console.print(f"\n[green]CustomCodeAgent result:[/green] {code_result}")
+    console.print(f"[green]CustomToolCallingAgent result:[/green] {tool_result}")
+    
+    return code_agent, tool_agent
+
+
 # Main function to run all examples
 async def main():
     console = Console()
@@ -390,6 +639,12 @@ async def main():
     
     # Demonstrate integration with Brain
     await run_brain_integration()
+    
+    # Run the custom tool initialization example
+    await run_custom_tool_initialization_example()
+    
+    # Create custom agents with smolagents tool logic
+    await create_custom_agent_with_smolagents_logic()
     
     console.print(Panel("[bold green]All examples completed successfully![/bold green]"))
 

@@ -24,3 +24,9 @@ nest_asyncio>=1.5.8
 # Additional dependencies
 browser-use
 helium
+
+# Core dependencies
+aiohttp>=3.8.0
+
+# Tool-specific dependencies
+duckduckgo-search>=4.1.0
