@@ -1,11 +1,17 @@
 """
-Minion-Manus: A framework combining Minion with browser use capabilities.
+Minion-Manus: A toolkit for implementing and managing tools for LLM agents.
 
-This package integrates the Minion framework with browser automation capabilities
-from OpenManus to provide a comprehensive agent framework.
+This package provides a standardized way to create, execute, and validate tools
+that can be used with various LLM frameworks and agent architectures.
 """
 
-from minion_manus.agent.agent import Agent,ToolExecutor
-
 __version__ = "0.1.0"
-__all__ = ["Agent","ToolExecutor"]
+
+# Import submodules
+from minion_manus import tools
+from minion_manus import providers
+
+__all__ = [
+    "tools",
+    "providers",
+]

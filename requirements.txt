@@ -1,32 +1,14 @@
-# Core dependencies from Minion
-loguru>=0.7.0
-python-dotenv>=1.0.0
-litellm>=1.0.0
-tenacity>=9.0.0
-jinja2>=3.1.2
-aiofiles>=24.1.0
-
-# Browser use dependencies from OpenManus
-browser-use>=0.1.40
-pydantic>=2.10.4
-pillow>=10.4.0
-playwright>=1.49.1
-
-# Development dependencies
-pytest>=7.0.0
-pytest-asyncio>=0.21.0
-black>=23.0.0
-
-# SmolaAgents integration
-smolagents>=0.1.0
-nest_asyncio>=1.5.8
-
-# Additional dependencies
-browser-use
-helium
-
 # Core dependencies
+pydantic>=2.0.0
+jsonschema>=4.0.0
+typing-extensions>=4.0.0
 aiohttp>=3.8.0
+python-dotenv>=1.0.0
 
-# Tool-specific dependencies
-duckduckgo-search>=4.1.0
+# Optional dependencies for SmolaAgents integration
+smolagents>=0.0.5
+nest-asyncio>=1.5.6
+
+# Optional dependencies for database examples
+sqlalchemy>=2.0.0
+aiosqlite>=0.17.0
