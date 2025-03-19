@@ -30,6 +30,9 @@ class BaseTool(ABC):
         """
         return self._execute(**kwargs)
 
+    def __call__(self, **kwargs) -> Any:
+        return self.execute(**kwargs)
+
     async def aexecute(self, **kwargs) -> Any:
         """
         Ensures async execution regardless of implementation.
