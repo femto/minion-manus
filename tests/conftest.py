@@ -53,12 +53,13 @@ def mock_providers():
 def mock_basic_provider():
     """Fixture to mock a basic provider instance."""
     provider_mock = mock.MagicMock()
-    provider_mock.generate.return_value = {
-        "choices": [{"message": {"content": "Mock response"}}]
-    }
+    provider_mock.generate_sync.return_value = "Mock response"
     provider_mock.agenerate = mock.AsyncMock(return_value={
         "choices": [{"message": {"content": "Async mock response"}}]
     })
+    provider_mock.chat_completion.return_value = {
+        "choices": [{"message": {"content": "Mock response"}}]
+    }
     return provider_mock
 
 
@@ -66,7 +67,9 @@ def mock_basic_provider():
 def mock_tool_calling_provider():
     """Fixture to mock a provider with tool calling capability."""
     provider_mock = mock.MagicMock()
-    provider_mock.generate.return_value = {
+    tool_call_response = "I'll help with that"
+    provider_mock.generate_sync.return_value = tool_call_response
+    provider_mock.chat_completion.return_value = {
         "choices": [{
             "message": {
                 "content": "I'll help with that",
