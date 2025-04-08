@@ -425,6 +425,8 @@ class MinionProviderToSmolAdapter(BaseSmolaAgentsModelAdapter):
                     logger.error(f"CRITICAL ERROR: Flat message {i} has role '{role}' but no 'name' field after processing")
         
         return flat_messages
+    def _construct_response_from_text(self, text):
+        raise NotImplementedError("NotImplementedError")
 
     async def agenerate(self, messages: List[Dict[str, Any]], tools: Optional[List] = None, **kwargs) -> Dict[str, Any]:
         """
@@ -639,7 +641,7 @@ class MinionProviderToSmolAdapter(BaseSmolaAgentsModelAdapter):
                     return message
                 except Exception as e:
                     logger.error(f"Error in generate_sync: {e}")
-                    return self._construct_response_from_text(f"Error: {str(e)}")
+                    raise e
             
             # No sync API available, use async in thread
             else:
@@ -648,7 +650,7 @@ class MinionProviderToSmolAdapter(BaseSmolaAgentsModelAdapter):
         except Exception as e:
             logger.error(f"Error in generate: {e}")
             # Return a minimal response with the error message
-            return self._construct_response_from_text(f"Error: {str(e)}")
+            raise e
             
     def _convert_tools_for_smolagents(self, tools):
         """

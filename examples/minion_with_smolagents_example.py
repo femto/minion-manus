@@ -27,7 +27,7 @@ from minion_manus.providers.adapters import MinionProviderToSmolAdapter
 try:
     # Import directly from smolagents.tools to avoid any confusion
     from smolagents.tools import Tool, tool
-    from smolagents import ToolCallingAgent
+    from smolagents import ToolCallingAgent, CodeAgent
 except ImportError:
     print("SmolaAgents not found. Please install it with: pip install smolagents")
     sys.exit(1)
@@ -127,16 +127,17 @@ def main():
         
         # Create a ToolCallingAgent with our adapter and tools
         print("Creating SmolaAgents ToolCallingAgent with Minion provider...")
-        agent = ToolCallingAgent(
+        agent = CodeAgent(
             tools=[weather_tool, calculate_tool, capital_tool],
             model=adapter,  # Pass our adapter as the model
         )
         
         # Example queries that require tool use
         queries = [
-            "What's the weather like in Tokyo? And what's the capital of France?",
-            "What is 123 * 456 + 789?",
-            "I need to know the capital of Japan and the current weather in Sydney."
+            "What's the weather in Tokyo?",
+            #"What's the weather like in Tokyo? And what's the capital of France?",
+            # "What is 123 * 456 + 789?",
+            # "I need to know the capital of Japan and the current weather in Sydney."
         ]
         
         # Run the agent on each query
