@@ -12,3 +12,5 @@ nest-asyncio>=1.5.6
 # Optional dependencies for database examples
 sqlalchemy>=2.0.0
 aiosqlite>=0.17.0
+
+browser-use
