@@ -1,7 +1,7 @@
 """
 Browser tool for Minion-Manus.
 
-This module provides a browser tool that can be used with the Minion-Manus framework.
+This module provides browser functionality that can be used with the Minion-Manus framework.
 It is based on the browser_use_tool from OpenManus.
 """
 
@@ -16,261 +16,318 @@ from browser_use.dom.service import DomService
 from loguru import logger
 from pydantic import BaseModel, Field
 
+from smolagents import tool
+
 MAX_LENGTH = 2000
 
-BROWSER_DESCRIPTION = """
-Interact with a web browser to perform various actions such as navigation, element interaction,
-content extraction, and tab management. Supported actions include:
-- 'navigate': Go to a specific URL
-- 'click': Click an element by index
-- 'input_text': Input text into an element
-- 'screenshot': Capture a screenshot
-- 'get_html': Get page HTML content
-- 'get_text': Get text content of the page
-- 'read_links': Get all links on the page
-- 'execute_js': Execute JavaScript code
-- 'scroll': Scroll the page
-- 'switch_tab': Switch to a specific tab
-- 'new_tab': Open a new tab
-- 'close_tab': Close the current tab
-- 'refresh': Refresh the current page
-"""
-
+# Valid browser actions
+VALID_ACTIONS = {
+    "navigate", "click", "input_text", "screenshot", "get_html",
+    "get_text", "read_links", "execute_js", "scroll", "switch_tab",
+    "new_tab", "close_tab", "refresh"
+}
 
 class BrowserToolResult(BaseModel):
     """Result of a browser tool execution."""
-    
     success: bool = True
     message: str = ""
     data: Optional[Any] = None
 
+_browser: Optional[BrowserUseBrowser] = None
+_context: Optional[BrowserContext] = None
+_lock = asyncio.Lock()
 
-class BrowserTool:
-    """Browser tool for Minion-Manus."""
-    
-    def __init__(self):
-        """Initialize the browser tool."""
-        self.name = "browser_use"
-        self.description = BROWSER_DESCRIPTION
-        self.lock = asyncio.Lock()
-        self.browser: Optional[BrowserUseBrowser] = None
-        self.context: Optional[BrowserContext] = None
-        self.dom_service: Optional[DomService] = None
-    
-    async def _ensure_browser_initialized(self) -> BrowserContext:
-        """Ensure that the browser is initialized."""
-        if self.browser is None:
-            logger.info("Initializing browser")
-            config = BrowserConfig(headless=False)
-            self.browser = BrowserUseBrowser(config)
-            self.context = await self.browser.new_context()
-        return self.context
-    
-    async def execute(
-        self,
-        action: str,
-        url: Optional[str] = None,
-        index: Optional[int] = None,
-        text: Optional[str] = None,
-        script: Optional[str] = None,
-        scroll_amount: Optional[int] = None,
-        tab_id: Optional[int] = None,
-        **kwargs,
-    ) -> BrowserToolResult:
-        """Execute a browser action."""
-        async with self.lock:
-            try:
-                context = await self._ensure_browser_initialized()
-                
-                if action == "navigate":
-                    if not url:
-                        return BrowserToolResult(
-                            success=False, message="URL is required for navigate action"
-                        )
-                    await context.goto(url)
-                    return BrowserToolResult(
-                        success=True, message=f"Navigated to {url}"
-                    )
-                
-                elif action == "click":
-                    if index is None:
-                        return BrowserToolResult(
-                            success=False, message="Index is required for click action"
-                        )
+async def _ensure_browser_initialized() -> BrowserContext:
+    """Ensure that the browser is initialized."""
+    global _browser, _context
+    if _browser is None:
+        logger.info("Initializing browser")
+        config = BrowserConfig(headless=False)
+        _browser = BrowserUseBrowser(config)
+        _context = await _browser.new_context()
+    return _context
+
+def run_async(coro):
+    """Run an async coroutine to completion and return its result."""
+    try:
+        loop = asyncio.get_event_loop()
+    except RuntimeError:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+    return loop.run_until_complete(coro)
+
+#@tool
+def browser(
+    action: str,
+    url: Optional[str] = None,
+    index: Optional[int] = None,
+    text: Optional[str] = None,
+    script: Optional[str] = None,
+    scroll_amount: Optional[int] = None,
+    tab_id: Optional[int] = None,
+) -> Dict[str, Any]:
+    """Execute browser actions to interact with web pages.
+
+    This function provides various browser operations including navigation, element interaction,
+    content extraction, and tab management.
+
+    Args:
+        action: The browser action to perform. Must be one of:
+            - 'navigate': Go to a specific URL
+            - 'click': Click an element by index
+            - 'input_text': Input text into an element
+            - 'screenshot': Capture a screenshot
+            - 'get_html': Get page HTML content
+            - 'get_text': Get text content of the page
+            - 'read_links': Get all links on the page
+            - 'execute_js': Execute JavaScript code
+            - 'scroll': Scroll the page
+            - 'switch_tab': Switch to a specific tab
+            - 'new_tab': Open a new tab
+            - 'close_tab': Close the current tab
+            - 'refresh': Refresh the current page
+        url: URL for navigation actions
+        index: Element index for click/input actions
+        text: Text for input actions
+        script: JavaScript code to execute
+        scroll_amount: Amount to scroll in pixels
+        tab_id: Tab ID for tab management actions
+
+    Returns:
+        Dict containing:
+            - success: Whether the action was successful
+            - message: Description of what happened
+            - data: Optional data returned by the action
+    """
+    return run_async(_async_browser(
+        action=action,
+        url=url,
+        index=index,
+        text=text,
+        script=script,
+        scroll_amount=scroll_amount,
+        tab_id=tab_id
+    ))
+
+async def _async_browser(
+    action: str,
+    url: Optional[str] = None,
+    index: Optional[int] = None,
+    text: Optional[str] = None,
+    script: Optional[str] = None,
+    scroll_amount: Optional[int] = None,
+    tab_id: Optional[int] = None,
+) -> Dict[str, Any]:
+    """Execute browser actions to interact with web pages.
+
+    This function provides various browser operations including navigation, element interaction,
+    content extraction, and tab management.
+
+    Args:
+        action: The browser action to perform. Must be one of:
+            - 'navigate': Go to a specific URL
+            - 'click': Click an element by index
+            - 'input_text': Input text into an element
+            - 'screenshot': Capture a screenshot
+            - 'get_html': Get page HTML content
+            - 'get_text': Get text content of the page
+            - 'read_links': Get all links on the page
+            - 'execute_js': Execute JavaScript code
+            - 'scroll': Scroll the page
+            - 'switch_tab': Switch to a specific tab
+            - 'new_tab': Open a new tab
+            - 'close_tab': Close the current tab
+            - 'refresh': Refresh the current page
+        url: URL for navigation actions
+        index: Element index for click/input actions
+        text: Text for input actions
+        script: JavaScript code to execute
+        scroll_amount: Amount to scroll in pixels
+        tab_id: Tab ID for tab management actions
+
+    Returns:
+        Dict containing:
+            - success: Whether the action was successful
+            - message: Description of what happened
+            - data: Optional data returned by the action
+    """
+    async with _lock:
+        try:
+            if action not in VALID_ACTIONS:
+                return BrowserToolResult(
+                    success=False,
+                    message=f"Invalid action: {action}. Must be one of: {', '.join(sorted(VALID_ACTIONS))}"
+                ).dict()
+
+            context = await _ensure_browser_initialized()
+            result = BrowserToolResult()
+
+            if action == "navigate":
+                if not url:
+                    result.success = False
+                    result.message = "URL is required for navigate action"
+                else:
+                    page = await context.get_current_page()
+                    await page.goto(url)
+                    result.message = f"Navigated to {url}"
+
+            elif action == "click":
+                if index is None:
+                    result.success = False
+                    result.message = "Index is required for click action"
+                else:
                     elements = await context.query_selector_all("a, button, input[type=submit], input[type=button]")
                     if index >= len(elements):
-                        return BrowserToolResult(
-                            success=False,
-                            message=f"Index {index} is out of range. Only {len(elements)} elements found.",
-                        )
-                    await elements[index].click()
-                    return BrowserToolResult(
-                        success=True, message=f"Clicked element at index {index}"
-                    )
-                
-                elif action == "input_text":
-                    if index is None:
-                        return BrowserToolResult(
-                            success=False, message="Index is required for input_text action"
-                        )
-                    if text is None:
-                        return BrowserToolResult(
-                            success=False, message="Text is required for input_text action"
-                        )
+                        result.success = False
+                        result.message = f"Index {index} is out of range. Only {len(elements)} elements found."
+                    else:
+                        await elements[index].click()
+                        result.message = f"Clicked element at index {index}"
+
+            elif action == "input_text":
+                if index is None:
+                    result.success = False
+                    result.message = "Index is required for input_text action"
+                elif text is None:
+                    result.success = False
+                    result.message = "Text is required for input_text action"
+                else:
                     elements = await context.query_selector_all("input[type=text], textarea")
                     if index >= len(elements):
-                        return BrowserToolResult(
-                            success=False,
-                            message=f"Index {index} is out of range. Only {len(elements)} elements found.",
-                        )
-                    await elements[index].fill(text)
-                    return BrowserToolResult(
-                        success=True, message=f"Input text '{text}' at index {index}"
-                    )
-                
-                elif action == "screenshot":
-                    screenshot = await context.screenshot()
-                    return BrowserToolResult(
-                        success=True,
-                        message="Screenshot captured",
-                        data={"screenshot": screenshot},
-                    )
-                
-                elif action == "get_html":
-                    html = await context.content()
-                    if len(html) > MAX_LENGTH:
-                        html = html[:MAX_LENGTH] + "... (truncated)"
-                    return BrowserToolResult(
-                        success=True, message="HTML content retrieved", data={"html": html}
-                    )
-                
-                elif action == "get_text":
-                    text = await context.inner_text("body")
-                    if len(text) > MAX_LENGTH:
-                        text = text[:MAX_LENGTH] + "... (truncated)"
-                    return BrowserToolResult(
-                        success=True, message="Text content retrieved", data={"text": text}
-                    )
-                
-                elif action == "read_links":
-                    elements = await context.query_selector_all("a")
-                    links = []
-                    for element in elements:
-                        href = await element.get_attribute("href")
-                        text = await element.inner_text()
-                        if href:
-                            links.append({"href": href, "text": text})
-                    return BrowserToolResult(
-                        success=True,
-                        message=f"Found {len(links)} links",
-                        data={"links": links},
-                    )
-                
-                elif action == "execute_js":
-                    if not script:
-                        return BrowserToolResult(
-                            success=False, message="Script is required for execute_js action"
-                        )
-                    result = await context.evaluate(script)
-                    return BrowserToolResult(
-                        success=True,
-                        message="JavaScript executed",
-                        data={"result": str(result)},
-                    )
-                
-                elif action == "scroll":
-                    if scroll_amount is None:
-                        return BrowserToolResult(
-                            success=False, message="Scroll amount is required for scroll action"
-                        )
-                    await context.evaluate(f"window.scrollBy(0, {scroll_amount})")
-                    return BrowserToolResult(
-                        success=True, message=f"Scrolled by {scroll_amount} pixels"
-                    )
-                
-                elif action == "switch_tab":
-                    if tab_id is None:
-                        return BrowserToolResult(
-                            success=False, message="Tab ID is required for switch_tab action"
-                        )
-                    # Implementation depends on how tabs are managed in browser-use
-                    return BrowserToolResult(
-                        success=False, message="Switch tab not implemented yet"
-                    )
-                
-                elif action == "new_tab":
-                    if not url:
-                        return BrowserToolResult(
-                            success=False, message="URL is required for new_tab action"
-                        )
-                    # Implementation depends on how tabs are managed in browser-use
-                    new_context = await self.browser.new_context()
-                    await new_context.goto(url)
-                    return BrowserToolResult(
-                        success=True, message=f"Opened new tab with URL {url}"
-                    )
-                
-                elif action == "close_tab":
-                    # Implementation depends on how tabs are managed in browser-use
-                    return BrowserToolResult(
-                        success=False, message="Close tab not implemented yet"
-                    )
-                
-                elif action == "refresh":
-                    await context.reload()
-                    return BrowserToolResult(
-                        success=True, message="Page refreshed"
-                    )
-                
+                        result.success = False
+                        result.message = f"Index {index} is out of range. Only {len(elements)} elements found."
+                    else:
+                        await elements[index].fill(text)
+                        result.message = f"Input text '{text}' at index {index}"
+
+            elif action == "screenshot":
+                page = await context.get_current_page()
+                screenshot = await page.screenshot()
+                result.message = "Screenshot captured"
+                result.data = {"screenshot": screenshot}
+
+            elif action == "get_html":
+                page = await context.get_current_page()
+                html = await page.content()
+                if len(html) > MAX_LENGTH:
+                    html = html[:MAX_LENGTH] + "... (truncated)"
+                result.message = "HTML content retrieved"
+                result.data = {"html": html}
+
+            elif action == "get_text":
+                page = await context.get_current_page()
+                text = await page.inner_text("body")
+                if len(text) > MAX_LENGTH:
+                    text = text[:MAX_LENGTH] + "... (truncated)"
+                result.message = "Text content retrieved"
+                result.data = {"text": text}
+
+            elif action == "read_links":
+                elements = await context.query_selector_all("a")
+                links = []
+                for element in elements:
+                    href = await element.get_attribute("href")
+                    text = await element.inner_text()
+                    if href:
+                        links.append({"href": href, "text": text})
+                result.message = f"Found {len(links)} links"
+                result.data = {"links": links}
+
+            elif action == "execute_js":
+                if not script:
+                    result.success = False
+                    result.message = "Script is required for execute_js action"
                 else:
-                    return BrowserToolResult(
-                        success=False, message=f"Unknown action: {action}"
-                    )
+                    page = await context.get_current_page()
+                    result.message = "JavaScript executed"
+                    result.data = {"result": str(await page.evaluate(script))}
+
+            elif action == "scroll":
+                if scroll_amount is None:
+                    result.success = False
+                    result.message = "Scroll amount is required for scroll action"
+                else:
+                    page = await context.get_current_page()
+                    await page.evaluate(f"window.scrollBy(0, {scroll_amount})")
+                    result.message = f"Scrolled by {scroll_amount} pixels"
+
+            elif action == "switch_tab":
+                if tab_id is None:
+                    result.success = False
+                    result.message = "Tab ID is required for switch_tab action"
+                else:
+                    # Implementation depends on how tabs are managed in browser-use
+                    result.success = False
+                    result.message = "Switch tab not implemented yet"
+
+            elif action == "new_tab":
+                if not url:
+                    result.success = False
+                    result.message = "URL is required for new_tab action"
+                else:
+                    # Implementation depends on how tabs are managed in browser-use
+                    new_context = await _browser.new_context()
+                    page = await new_context.get_current_page()
+                    await page.goto(url)
+                    result.message = f"Opened new tab with URL {url}"
+
+            elif action == "close_tab":
+                # Implementation depends on how tabs are managed in browser-use
+                result.success = False
+                result.message = "Close tab not implemented yet"
+
+            elif action == "refresh":
+                page = await context.get_current_page()
+                await page.reload()
+                result.message = "Page refreshed"
             
-            except Exception as e:
-                logger.exception(f"Error executing browser action: {e}")
-                return BrowserToolResult(
-                    success=False, message=f"Error: {str(e)}"
-                )
+            return result.dict()
+        
+        except Exception as e:
+            logger.exception(f"Error executing browser action: {e}")
+            return BrowserToolResult(
+                success=False,
+                message=f"Error: {str(e)}"
+            ).dict()
+
+async def cleanup() -> None:
+    """Clean up browser resources."""
+    global _browser, _context
+    if _browser:
+        try:
+            await _browser.close()
+            _browser = None
+            _context = None
+            logger.info("Browser closed")
+        except Exception as e:
+            logger.exception(f"Error closing browser: {e}")
+
+async def get_current_state() -> Dict[str, Any]:
+    """Get the current state of the browser.
     
-    async def get_current_state(self) -> BrowserToolResult:
-        """Get the current state of the browser."""
-        async with self.lock:
-            try:
-                if self.context is None:
-                    return BrowserToolResult(
-                        success=False, message="Browser not initialized"
-                    )
-                
-                url = await self.context.url()
-                title = await self.context.title()
-                
+    Returns:
+        Dict containing the current URL and page title.
+    """
+    async with _lock:
+        try:
+            if _context is None:
                 return BrowserToolResult(
-                    success=True,
-                    message="Current browser state retrieved",
-                    data={"url": url, "title": title},
-                )
+                    success=False,
+                    message="Browser not initialized"
+                ).dict()
             
-            except Exception as e:
-                logger.exception(f"Error getting browser state: {e}")
-                return BrowserToolResult(
-                    success=False, message=f"Error: {str(e)}"
-                )
-    
-    async def cleanup(self):
-        """Clean up browser resources."""
-        if self.browser:
-            try:
-                await self.browser.close()
-                self.browser = None
-                self.context = None
-                self.dom_service = None
-                logger.info("Browser closed")
-            except Exception as e:
-                logger.exception(f"Error closing browser: {e}")
-    
-    def __del__(self):
-        """Destructor to ensure browser is closed."""
-        if self.browser:
-            logger.warning("Browser was not properly closed. Forcing cleanup.")
-            asyncio.create_task(self.cleanup()) 
+            url = await _context.url()
+            title = await _context.title()
+            
+            return BrowserToolResult(
+                success=True,
+                message="Current browser state retrieved",
+                data={"url": url, "title": title},
+            ).dict()
+        
+        except Exception as e:
+            logger.exception(f"Error getting browser state: {e}")
+            return BrowserToolResult(
+                success=False,
+                message=f"Error: {str(e)}"
+            ).dict() 

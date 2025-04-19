@@ -106,7 +106,7 @@ class SmolagentsAgent(MinionAgent):
             name=self.config.name,
             model=self._get_model(self.config),
             tools=tools,
-            verbosity_level=-1,  # OFF
+            verbosity_level=2,  # OFF
             managed_agents=managed_agents_instanced,
             **self.config.agent_args or {},
         )
