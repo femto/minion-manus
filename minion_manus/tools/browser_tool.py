@@ -176,12 +176,12 @@ async def _async_browser(
                     result.success = False
                     result.message = "Index is required for click action"
                 else:
-                    elements = await context.query_selector_all("a, button, input[type=submit], input[type=button]")
-                    if index >= len(elements):
+                    element = await context.get_dom_element_by_index(index)
+                    if not element:
                         result.success = False
-                        result.message = f"Index {index} is out of range. Only {len(elements)} elements found."
+                        result.message = f"Element with index {index} not found"
                     else:
-                        await elements[index].click()
+                        await context._click_element_node(element)
                         result.message = f"Clicked element at index {index}"
 
             elif action == "input_text":
@@ -192,12 +192,12 @@ async def _async_browser(
                     result.success = False
                     result.message = "Text is required for input_text action"
                 else:
-                    elements = await context.query_selector_all("input[type=text], textarea")
-                    if index >= len(elements):
+                    element = await context.get_dom_element_by_index(index)
+                    if not element:
                         result.success = False
-                        result.message = f"Index {index} is out of range. Only {len(elements)} elements found."
+                        result.message = f"Element with index {index} not found"
                     else:
-                        await elements[index].fill(text)
+                        await context._input_text_element_node(element, text)
                         result.message = f"Input text '{text}' at index {index}"
 
             elif action == "screenshot":
@@ -223,7 +223,8 @@ async def _async_browser(
                 result.data = {"text": text}
 
             elif action == "read_links":
-                elements = await context.query_selector_all("a")
+                page = await context.get_current_page()
+                elements = await page.query_selector_all("a")
                 links = []
                 for element in elements:
                     href = await element.get_attribute("href")
@@ -239,8 +240,9 @@ async def _async_browser(
                     result.message = "Script is required for execute_js action"
                 else:
                     page = await context.get_current_page()
+                    js_result = await page.evaluate(script)
                     result.message = "JavaScript executed"
-                    result.data = {"result": str(await page.evaluate(script))}
+                    result.data = {"result": str(js_result)}
 
             elif action == "scroll":
                 if scroll_amount is None:
@@ -256,25 +258,20 @@ async def _async_browser(
                     result.success = False
                     result.message = "Tab ID is required for switch_tab action"
                 else:
-                    # Implementation depends on how tabs are managed in browser-use
-                    result.success = False
-                    result.message = "Switch tab not implemented yet"
+                    await context.switch_to_tab(tab_id)
+                    result.message = f"Switched to tab {tab_id}"
 
             elif action == "new_tab":
                 if not url:
                     result.success = False
                     result.message = "URL is required for new_tab action"
                 else:
-                    # Implementation depends on how tabs are managed in browser-use
-                    new_context = await _browser.new_context()
-                    page = await new_context.get_current_page()
-                    await page.goto(url)
+                    await context.create_new_tab(url)
                     result.message = f"Opened new tab with URL {url}"
 
             elif action == "close_tab":
-                # Implementation depends on how tabs are managed in browser-use
-                result.success = False
-                result.message = "Close tab not implemented yet"
+                await context.close_current_tab()
+                result.message = "Closed current tab"
 
             elif action == "refresh":
                 page = await context.get_current_page()
@@ -316,13 +313,12 @@ async def get_current_state() -> Dict[str, Any]:
                     message="Browser not initialized"
                 ).dict()
             
-            url = await _context.url()
-            title = await _context.title()
+            state = await _context.get_state()
             
             return BrowserToolResult(
                 success=True,
                 message="Current browser state retrieved",
-                data={"url": url, "title": title},
+                data={"url": state.url, "title": state.title},
             ).dict()
         
         except Exception as e:
