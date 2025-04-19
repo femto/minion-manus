@@ -2,7 +2,8 @@
 
 __version__ = "0.1.0"
 
-from .frameworks.smolagents import MinionAgent
-from .config import AgentConfig
 
-__all__ = ["MinionAgent", "AgentConfig"] 
+from .config import AgentConfig, AgentFramework
+from .frameworks.minion_agent import MinionAgent
+
+__all__ = ["MinionAgent", "AgentConfig", "AgentFramework"]
