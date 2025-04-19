@@ -21,7 +21,6 @@ agent_config = AgentConfig(
     name="Research Assistant",
     description="A helpful research assistant",
     instructions="You are a helpful research assistant that can search the web and visit webpages.",
-    tools=["web_search", "visit_webpage"],
     model_args={"api_key_var": "OPENAI_API_KEY"}  # Will use OPENAI_API_KEY from environment
 )
 
