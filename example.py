@@ -1,5 +1,6 @@
 """Example usage of Minion Manus."""
 
+import asyncio
 from dotenv import load_dotenv
 import os
 
@@ -10,17 +11,28 @@ from minion_manus import MinionAgent, AgentConfig
 
 # Configure the agent
 agent_config = AgentConfig(
-    model_id="gpt-4.1",  # or your preferred model
+    model_id="gpt-4-1106-preview",  # 使用你的API部署中可用的模型
     name="Research Assistant",
     description="A helpful research assistant",
     instructions="You are a helpful research assistant that can search the web and visit webpages.",
-    tools=["web_search", "visit_webpage"],
-    model_args={"api_key_var": "OPENAI_API_KEY"}  # Will use OPENAI_API_KEY from environment
+    model_args={"api_key_var": "OPENAI_API_KEY"},  # Will use OPENAI_API_KEY from environment
+    agent_type="CodeAgent"  # 指定代理类型
 )
 
-# Create and run the agent
-agent = MinionAgent(agent_config)
+async def main():
+    try:
+        # Create and run the agent
+        agent = MinionAgent(agent_config)
+        
+        # Run the agent with a question
+        result = await agent.run("What are the latest developments in AI?")
+        print("Agent's response:", result)
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        # 如果需要调试
+        import litellm
+        litellm._turn_on_debug()
+        raise
 
-# Run the agent with a question
-result = agent.run("What are the latest developments in AI?")
-print("Agent's response:", result) 
+if __name__ == "__main__":
+    asyncio.run(main()) 

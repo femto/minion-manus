@@ -10,7 +10,7 @@ from typing import Any, Dict, List, Optional, Union
 from loguru import logger
 
 
-class Agent:
+class BaseAgent:
     """Agent class for Minion-Manus."""
     
     def __init__(self, name: str = "Minion-Manus Agent"):
