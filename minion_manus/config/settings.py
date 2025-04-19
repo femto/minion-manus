@@ -5,14 +5,47 @@ This module provides a Settings class for managing configuration settings.
 """
 
 import os
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, List
+from dataclasses import dataclass, field
+from dataclasses import dataclass, field
+from enum import Enum
+from typing import Optional, List, Dict, Any
 
+from pydantic import BaseModel, ConfigDict, Field
 from dotenv import load_dotenv
-from pydantic import BaseModel, Field
 
 
 # Load environment variables from .env file
 load_dotenv()
+
+__all__ = ['AgentFramework', 'MCPTool', 'AgentConfig', 'Settings', 'settings']
+
+
+class AgentFramework(str, Enum):
+    GOOGLE = "google"
+    LANGCHAIN = "langchain"
+    LLAMAINDEX = "llama_index"
+    OPENAI = "openai"
+    SMOLAGENTS = "smolagents"
+
+
+class MCPTool(BaseModel):
+    command: str
+    args: list[str]
+    tools: list[str] | None = None
+
+class AgentConfig(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    model_id: str
+    name: str = "Minion-Manus"
+    instructions: str | None = None
+    tools: list[str | MCPTool] = Field(default_factory=list)
+    handoff: bool = False
+    agent_type: str | None = None
+    agent_args: dict | None = None
+    model_type: str | None = None
+    model_args: dict | None = None
+    description: str | None = None
 
 
 class BrowserSettings(BaseModel):

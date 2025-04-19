@@ -4,6 +4,6 @@ Configuration module for Minion-Manus.
 This module provides configuration utilities for the Minion-Manus framework.
 """
 
-from minion_manus.config.settings import Settings
+from .settings import AgentFramework, MCPTool, AgentConfig, Settings, settings
 
-__all__ = ["Settings"] 
+__all__ = ['AgentFramework', 'MCPTool', 'AgentConfig', 'Settings', 'settings'] 

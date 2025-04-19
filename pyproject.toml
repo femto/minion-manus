@@ -1,0 +1,35 @@
+[project]
+name = "minion-manus"
+version = "0.1.0"
+description = "A wrapper for smolagents to make it easier to use"
+authors = [
+    {name = "femtozheng", email = "femtozheng@example.com"},
+]
+dependencies = [
+    "smolagents>=0.0.1",
+    "python-dotenv>=1.0.0",
+]
+requires-python = ">=3.9"
+
+[project.optional-dependencies]
+dev = [
+    "black>=23.0.0",
+    "isort>=5.12.0",
+    "pytest>=7.0.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.black]
+line-length = 88
+target-version = ['py39']
+include = '\.pyi?$'
+
+[tool.isort]
+profile = "black"
+multi_line_output = 3
+
+[tool.hatch.build.targets.wheel]
+packages = ["minion_manus"] 

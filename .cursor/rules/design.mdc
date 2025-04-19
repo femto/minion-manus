@@ -1,0 +1,10 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+
+# Your rule content
+
+- 我的个人空间是~/space, 请把design写在那下面,
+然后这个项目是minion-manus,所以可以把design写/Users/femtozheng/space/minion-manus下

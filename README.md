@@ -1,17 +1,6 @@
-# Minion-Manus
+# Minion Manus
 
-A toolkit for implementing and managing tools for LLM agents.
-
-## Overview
-
-Minion-Manus provides a flexible and extensible system for creating, managing, and using tools with Large Language Models (LLMs). It offers a standardized way to define tools, validate their inputs and outputs, and integrate them with various LLM frameworks.
-
-Key features:
-- Simple class-based API for defining tools
-- Support for both synchronous and asynchronous execution
-- Schema validation for inputs and outputs
-- Adapters for integration with other tool frameworks
-- Comprehensive type hints and documentation
+A simplified wrapper for smolagents that makes it easy to create and run AI agents.
 
 ## Installation
 
@@ -19,114 +8,68 @@ Key features:
 pip install minion-manus
 ```
 
-## Basic Usage
+## Usage
 
-### Creating a Tool
-
-```python
-from minion_manus.tools import Tool
-
-class CalculatorTool(Tool):
-    name = "calculator"
-    description = "Perform mathematical calculations"
-    inputs = {
-        "expression": {
-            "type": "string",
-            "description": "Mathematical expression to evaluate",
-            "required": True
-        }
-    }
-    output_type = "number"
-    
-    def _execute(self, expression: str) -> float:
-        return eval(expression)
-
-# Create and use the tool
-calculator = CalculatorTool()
-result = calculator.execute(expression="2 + 2 * 3")
-print(result)  # 8.0
-```
-
-### Creating an Async Tool
+Here's a simple example of how to use Minion Manus:
 
 ```python
-import asyncio
-from minion_manus.tools import AsyncTool
+from minion_manus import MinionAgent, AgentConfig
 
-class AsyncCalculatorTool(AsyncTool):
-    name = "async_calculator"
-    description = "Perform mathematical calculations asynchronously"
-    inputs = {
-        "expression": {
-            "type": "string",
-            "description": "Mathematical expression to evaluate",
-            "required": True
-        }
-    }
-    output_type = "number"
-    
-    async def _aexecute(self, expression: str) -> float:
-        # Simulate async operation
-        await asyncio.sleep(0.1)
-        return eval(expression)
+# Configure the agent
+agent_config = AgentConfig(
+    model_id="gpt-4",  # or your preferred model
+    name="Research Assistant",
+    description="A helpful research assistant",
+    instructions="You are a helpful research assistant that can search the web and visit webpages.",
+    tools=["web_search", "visit_webpage"],
+    model_args={"api_key_var": "OPENAI_API_KEY"}  # Will use OPENAI_API_KEY from environment
+)
 
-# Create and use the async tool
-async def main():
-    calculator = AsyncCalculatorTool()
-    result = await calculator.aexecute(expression="2 + 2 * 3")
-    print(result)  # 8.0
+# Create and run the agent
+agent = MinionAgent(agent_config)
 
-    asyncio.run(main())
+# Run the agent with a question
+result = agent.run("What are the latest developments in AI?")
+print("Agent's response:", result)
 ```
 
-## Tool Schema Definition
+## Configuration
 
-Tools are defined with the following schema attributes:
+The `AgentConfig` class accepts the following parameters:
 
-- `name`: A unique identifier for the tool
-- `description`: A detailed description of what the tool does
-- `inputs`: A dictionary defining the expected input parameters
-- `output_type`: The type of the expected output
+- `model_id`: The ID of the model to use (e.g., "gpt-4")
+- `name`: Name of the agent (default: "Minion")
+- `description`: Optional description of the agent
+- `instructions`: Optional system instructions for the agent
+- `tools`: List of tools the agent can use
+- `model_args`: Optional dictionary of model-specific arguments
+- `agent_args`: Optional dictionary of agent-specific arguments
 
-Input parameters can have the following attributes:
-- `type`: Data type (string, number, boolean, object, array)
-- `description`: Description of the parameter
-- `required`: Whether the parameter is required
-- `default`: Default value if not provided
+## Environment Variables
 
-## Adapters
+Make sure to set up your environment variables in a `.env` file:
 
-Minion-Manus provides adapters to convert tools between different frameworks. Currently supported:
-
-### SmolaAgents Adapter
-
-Convert between Minion-Manus tools and SmolaAgents tools:
-
-```python
-from minion_manus.tools.adapters import AdapterFactory, AdapterType
-from smolagents import DuckDuckGoSearchTool
-
-# Convert Minion tool to SmolaAgents tool
-calculator = CalculatorTool()
-smola_calculator = AdapterFactory.get_adapter(AdapterType.SMOLAGENTS).to_external(calculator)
-
-# Convert SmolaAgents tool to Minion tool
-ddg_tool = DuckDuckGoSearchTool()
-minion_ddg_tool = AdapterFactory.get_adapter(AdapterType.SMOLAGENTS).to_internal(ddg_tool)
+```env
+OPENAI_API_KEY=your_api_key_here
 ```
 
-## Examples
+## Development
 
-The repository contains several examples demonstrating different aspects of Minion-Manus:
+To set up for development:
 
-- `examples/smolagents_adapter_example.py`: Demonstrates how to convert tools between Minion-Manus and SmolaAgents
-- `examples/minion_provider_adapter.py`: Shows how to use Minion LLM providers with SmolaAgents
-- `examples/database_tool_example.py`: Illustrates creating database tools using SQLAlchemy
+```bash
+# Clone the repository
+git clone https://github.com/yourusername/minion-manus.git
+cd minion-manus
 
-## Contributing
+# Create a virtual environment
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+# Install development dependencies
+pip install -e ".[dev]"
+```
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+MIT License
